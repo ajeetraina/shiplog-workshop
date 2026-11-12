@@ -1,0 +1,60 @@
+version: "2.0"
+
+metadata:
+  id: choice
+  title: "Choice"
+  summary: "Steer the agent's base-image choice: offer hardened images over MCP, then bake them into every sandbox with a kit."
+
+# In-memory state tracks how DHI has been introduced. Nothing gates on it, so the
+# lab works whatever order a learner runs the commands in.
+state:
+  mcp: false
+  kit: false
+
+settings:
+  pace:
+    build: 900
+
+defaults:
+  unmatched:
+    stderr: ["Command not simulated in this lab. Follow the instructions on the left."]
+    exit: 127
+
+scenarios:
+  # Register Docker Hardened Images as an MCP server. The agent is now OFFERED
+  # hardened bases when it asks — it still has to choose to use them.
+  - id: sbx-mcp-add-dhi
+    completes: offer-dhi
+    when:
+      command: sbx mcp add
+    then:
+      state:
+        mcp: true
+      output:
+        - { text: "⬡ mcp  'dhi' (Docker Hardened Images) registered for agent tools", delay: short }
+
+  # Ask the agent to write a Dockerfile. It queries the dhi MCP and, offered a
+  # hardened base, selects it over node:latest.
+  - id: sbx-run-dockerfile
+    when:
+      command: sbx run
+    then:
+      output:
+        - { text: "⬡ sbx  launching microVM  (kernel: isolated · docker: isolated · fs: isolated)", delay: short }
+        - { text: "⬡ agent connected", delay: short }
+        - { text: "agent › querying dhi MCP for an approved node base …", delay: medium }
+        - { text: "agent › selected: dhi/node:22-hardened  (0 known CVEs, non-root, minimal)", delay: short }
+        - { text: "agent › wrote Dockerfile", delay: short }
+        - { text: "✓ production Dockerfile written", delay: medium }
+
+  # Install DHI as a kit. Now hardened bases are the default in every sandbox —
+  # baked into the environment, no asking required.
+  - id: sbx-kit-add-dhi
+    completes: enforce-dhi
+    when:
+      command: sbx kit add
+    then:
+      state:
+        kit: true
+      output:
+        - { text: "⬡ kit  'dhi' installed — hardened bases available by default in every sandbox", delay: short }

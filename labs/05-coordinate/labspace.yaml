@@ -1,0 +1,60 @@
+title: "Coordinate — a team of agents, you in charge"
+description: "Run two agents at once — a developer and a reviewer — each in its own sandbox on its own branch, so they never clobber each other. You stay the coordinator: read the review, see the diff, make the merge call."
+
+catalog:
+  icon: hub
+  tags: ["sandbox", "sbx", "agents", "team", "coordinate", "human-in-the-loop"]
+  estimatedMinutes: 15
+  order: 6
+
+simulator: simulator.yaml
+
+# Two terminals to reinforce the parallelism — a Developer and a Reviewer. They
+# share ONE simulator runtime and ONE virtual filesystem; each `sbx run` gets its
+# own isolated VM and its own branch.
+terminals:
+  - id: dev
+    title: Developer
+    icon: terminal
+  - id: review
+    title: Reviewer
+    icon: rate_review
+
+# Seed the virtual filesystem. The formatter stub is what the developer agent
+# "implemented"; REVIEW.md is what the reviewer agent "wrote" — the learner reads
+# it before making the merge call.
+files:
+  shiplog/lib/format.ts: |
+    // Formats a list of merged PRs into a changelog block.
+    interface PR { title: string; author: string; mergedAt: string; }
+    export function formatChangelog(prs: PR[]): string {
+      return prs
+        .map((p) => `- ${p.title} (@${p.author}) — ${p.mergedAt}`)
+        .join("\n");
+    }
+  REVIEW.md: |
+    # Review — feat/formatter
+
+    1. `format.ts` does not handle an empty PR list → add a guard (return a
+       "No changes" line instead of an empty string).
+    2. Dates are not localized — `mergedAt` is printed raw.
+    3. ✅ Otherwise clean, safe to merge after (1).
+
+sections:
+  - title: "Two agents, one feature"
+    contentPath: 00-two-agents.md
+  - title: "Launch the team"
+    contentPath: 01-launch-team.md
+    steps:
+      - id: launch-team
+        title: "Launch both agents, each boxed and branched"
+  - title: "Coordinate the merge"
+    contentPath: 02-merge.md
+    steps:
+      - id: merge
+        title: "Read the review, see the diff, make the merge call"
+  - title: "What just happened"
+    contentPath: 03-aha.md
+
+variables:
+  app: ShipLog

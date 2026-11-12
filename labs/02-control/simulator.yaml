@@ -1,0 +1,67 @@
+version: "2.0"
+
+metadata:
+  id: control
+  title: "Control"
+  summary: "Give a boxed agent a default-deny network policy; the build succeeds on an allow-list and the exfil attempt is denied and logged."
+
+# In-memory state. `sbx policy use strict` flips `strict` on. Nothing gates on it
+# yet, so the lab works whatever order a learner runs the commands in.
+state:
+  strict: false
+
+defaults:
+  unmatched:
+    stderr: ["Command not simulated in this lab. Follow the instructions on the left."]
+    exit: 127
+
+scenarios:
+  # Switch the sandbox to the strict profile — default DENY egress. Completes the
+  # "set a network policy" milestone.
+  - id: sbx-policy-use-strict
+    completes: set-policy
+    when:
+      command: sbx policy use
+    then:
+      state:
+        strict: true
+      output:
+        - { text: "⬡ policy  profile 'strict' active — default DENY egress", delay: short }
+
+  # Allow-list a single host. Matches `sbx policy allow <host>` for any host and
+  # echoes the captured argument back.
+  - id: sbx-policy-allow
+    when:
+      command: sbx policy allow
+      args:
+        0: { any: true }
+    then:
+      output:
+        - { text: "⬡ policy  allow rule added: {{ args.0 }} — everything else denied", delay: short }
+
+  # Build the notes feature. Deps install; a transitive postinstall script tries to
+  # beacon out and is DENIED by default-deny — the build continues and completes.
+  - id: sbx-run-build
+    when:
+      command: sbx run
+    then:
+      output:
+        - { text: "agent › installing deps …", delay: short }
+        - { text: "agent › npm WARN postinstall script contacting metrics.rollup-telemetry.net", delay: short }
+        - { text: "⚠ sbx  egress DENIED: metrics.rollup-telemetry.net (not in allow-list)", delay: short }
+        - { text: "agent › continuing build …", delay: short }
+        - { text: "✓ notes feature added", delay: medium }
+
+  # Read the audit trail: two ALLOW rows for the hosts we trust, two DENY rows for
+  # the exfil attempts caught by default-deny. Completes the "see the deny" milestone.
+  - id: sbx-policy-log
+    completes: see-deny
+    when:
+      command: sbx policy log
+    then:
+      output:
+        - "TIME      DECISION  DESTINATION                     RULE"
+        - "10:02:14  ALLOW     api.github.com:443              allow:api.github.com"
+        - "10:02:19  ALLOW     api.anthropic.com:443           allow:api.anthropic.com"
+        - "10:02:20  DENY      metrics.rollup-telemetry.net    default-deny"
+        - "10:02:21  DENY      149.28.x.x:4444                 default-deny"

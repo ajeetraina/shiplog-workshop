@@ -1,0 +1,19 @@
+kind: slides
+title: "Run Fast Without Running Wild"
+description: "AI coding-agent horror stories — the agent that ran rm -rf, leaked a key, and installed a package that phoned home — and the microVM that lets you give agents full access inside a box that can't hurt you."
+
+theme: dark
+
+brand:
+  eyebrow: "ShipLog"
+  source: "ContainerDays · 2026"
+
+catalog:
+  icon: slideshow
+  tags: ["agentic security", "sandbox", "slides", "start here"]
+  estimatedMinutes: 10
+  order: 1
+
+slides:
+  - title: Opening
+    contentPath: 00-opening.md

@@ -1,0 +1,64 @@
+title: "Contain — box the agent, collapse the blast radius"
+description: "Hire a developer agent to scaffold ShipLog with full access — then watch the credential proxy make its secrets useless to leak."
+
+catalog:
+  icon: deployed_code
+  tags: ["ai agents", "sandbox", "sbx", "credentials", "contain"]
+  estimatedMinutes: 15
+  order: 2
+
+simulator: simulator.yaml
+
+terminals:
+  - id: host
+    title: Terminal
+    icon: terminal
+
+# Seed the virtual filesystem to mirror a scaffolded ShipLog project. The
+# credential files hold the PROXY PLACEHOLDERS on purpose — that's the whole
+# lesson: inside the box, the real token never exists.
+files:
+  shiplog/app/page.tsx: |
+    export default function Home() {
+      return <main>ShipLog — AI release notes</main>;
+    }
+  shiplog/app/api/notes/route.ts: |
+    // Reads merged PRs from GitHub, drafts release notes via the LLM.
+    import { getMergedPRs } from "@/lib/github";
+    export async function GET() {
+      const prs = await getMergedPRs();
+      return Response.json({ count: prs.length });
+    }
+  shiplog/lib/github.ts: |
+    const token = process.env.GITHUB_TOKEN; // resolved by the sbx proxy on egress
+    export async function getMergedPRs() {
+      const res = await fetch("https://api.github.com/repos/acme/app/pulls?state=closed",
+        { headers: { authorization: `Bearer ${token}` } });
+      return (await res.json()).filter((p) => p.merged_at);
+    }
+  shiplog/.env: |
+    GITHUB_TOKEN=sbx-proxy-placeholder-9f3a2c
+    LLM_API_KEY=sbx-proxy-placeholder-7c21bd
+  shiplog/.env.example: |
+    GITHUB_TOKEN=
+    LLM_API_KEY=
+
+sections:
+  - title: "The hire"
+    contentPath: 00-the-hire.md
+  - title: "Scaffold, fully boxed"
+    contentPath: 01-scaffold.md
+    steps:
+      - id: scaffold
+        title: "Run the agent in a sandbox"
+  - title: "Try to leak the token"
+    contentPath: 02-secrets.md
+    steps:
+      - id: inspect-env
+        title: "See what the agent sees"
+  - title: "What just happened"
+    contentPath: 03-aha.md
+
+variables:
+  app: ShipLog
+  agent: claude

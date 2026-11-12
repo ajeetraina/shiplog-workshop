@@ -1,0 +1,35 @@
+title: "Control — decide what the agent can reach"
+description: "The agent installs dependencies to build ShipLog's release-notes feature — and a transitive dep tries to beacon your GitHub token out. Set a default-deny network policy, watch the build still work, and catch the exfil in the audit log."
+
+catalog:
+  icon: policy
+  tags: ["sandbox", "network policy", "allow-deny", "governance", "audit", "control"]
+  estimatedMinutes: 15
+  order: 3
+
+simulator: simulator.yaml
+
+terminals:
+  - id: host
+    title: Terminal
+    icon: terminal
+
+sections:
+  - title: "Dependencies run code"
+    contentPath: 00-the-next-risk.md
+  - title: "Set a network policy"
+    contentPath: 01-set-policy.md
+    steps:
+      - id: set-policy
+        title: "Switch to default-deny and allow-list the hosts you trust"
+  - title: "Build and watch the deny"
+    contentPath: 02-see-deny.md
+    steps:
+      - id: see-deny
+        title: "Build the feature and read the audit trail"
+  - title: "What just happened"
+    contentPath: 03-aha.md
+
+variables:
+  app: ShipLog
+  agent: claude

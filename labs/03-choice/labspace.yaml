@@ -1,0 +1,49 @@
+title: "Choice — govern the agent's supply chain"
+description: "The agent needs a base image. Left alone it grabs node:latest and its CVEs. Offer it hardened bases over MCP, then bake them into every sandbox with a kit."
+
+catalog:
+  icon: shield_lock
+  tags: ["sandbox", "mcp", "kits", "dhi", "authorization", "choice"]
+  estimatedMinutes: 15
+  order: 4
+
+simulator: simulator.yaml
+
+terminals:
+  - id: host
+    title: Terminal
+    icon: terminal
+
+# Seed the virtual filesystem with the Dockerfile the agent ends up writing once
+# it is steered onto Docker Hardened Images. The first line is the whole lesson:
+# a hardened base, not node:latest. The built-in `cat` reads this file.
+files:
+  shiplog/Dockerfile: |
+    FROM dhi/node:22-hardened
+    WORKDIR /app
+    COPY package*.json ./
+    RUN npm ci --omit=dev
+    COPY . .
+    USER node
+    EXPOSE 3000
+    CMD ["node", "server.js"]
+
+sections:
+  - title: "Ship it means containerize it"
+    contentPath: 00-ship-it.md
+  - title: "Offer only hardened images"
+    contentPath: 01-offer-dhi.md
+    steps:
+      - id: offer-dhi
+        title: "Register DHI as an MCP server"
+  - title: "Bake it into every sandbox"
+    contentPath: 02-enforce-dhi.md
+    steps:
+      - id: enforce-dhi
+        title: "Install DHI as a kit"
+  - title: "What just happened"
+    contentPath: 03-aha.md
+
+variables:
+  app: ShipLog
+  agent: claude

@@ -1,0 +1,73 @@
+version: "2.0"
+
+metadata:
+  id: coordinate
+  title: "Coordinate"
+  summary: "Run two agents at once — a developer and a reviewer — each in its own sandbox on its own branch, then make the human merge call."
+
+# In-memory state. The two launches flip their flags; nothing gates on them, so
+# the lab works whatever order a learner runs the commands in.
+state:
+  dev-launched: false
+  review-launched: false
+
+defaults:
+  unmatched:
+    stderr: ["Command not simulated in this lab. Follow the instructions on the left."]
+    exit: 127
+
+scenarios:
+  # Developer agent (claude) on its own branch, in the Developer terminal. Writes
+  # lib/format.ts and commits — all inside an isolated VM. The --branch is captured
+  # and echoed so the output names the branch the learner typed.
+  - id: sbx-run-dev
+    when:
+      command: sbx run
+      args:
+        --agent: "claude"
+        --branch: { any: true }
+    then:
+      state:
+        dev-launched: true
+      output:
+        - { text: "⬡ sbx  session shiplog-dev   · branch {{ args.branch }}   · isolated VM", delay: short }
+        - { text: "agent › writing lib/format.ts …", delay: short }
+        - { text: "✓ committed to {{ args.branch }}", delay: medium }
+
+  # Reviewer agent (gordon) on a different branch, in the Reviewer terminal. Reads
+  # the developer's branch and writes REVIEW.md — never edits main. Fires second in
+  # the authored flow, so it completes the launch-team milestone.
+  - id: sbx-run-review
+    completes: launch-team
+    when:
+      command: sbx run
+      args:
+        --agent: "gordon"
+        --branch: { any: true }
+    then:
+      state:
+        review-launched: true
+      output:
+        - { text: "⬡ sbx  session shiplog-rev   · branch {{ args.branch }} · isolated VM", delay: short }
+        - { text: "review › reading feat/formatter … 3 notes", delay: short }
+        - { text: "✓ wrote REVIEW.md", delay: medium }
+
+  # Inspect the change you're being asked to accept: the diff of the feature branch
+  # against main. One file, 48 insertions.
+  - id: sbx-exec-diff
+    when:
+      command: sbx exec
+    then:
+      output:
+        - " lib/format.ts | 48 ++++++++"
+        - " 1 file changed, 48 insertions(+)"
+
+  # The human merge call. No conflicts — the agents never shared a branch, so there
+  # was nothing to collide. Completes the merge milestone.
+  - id: git-merge
+    completes: merge
+    when:
+      command: git merge
+    then:
+      output:
+        - { text: "✓ merged — no conflicts (agents never shared a branch)", delay: short }

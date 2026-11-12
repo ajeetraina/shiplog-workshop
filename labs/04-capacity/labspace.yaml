@@ -1,0 +1,49 @@
+title: "Capacity — the sandbox as code"
+description: "The team grows. Instead of env drift and \"works on my machine\", declare the sandbox ONCE in sbxenv.yaml, commit it, and every developer and agent reproduces the byte-identical box with one command."
+
+catalog:
+  icon: groups
+  tags: ["sandbox", "sbx", "sbxenv", "reproducible", "team", "capacity"]
+  estimatedMinutes: 10
+  order: 5
+
+simulator: simulator.yaml
+
+terminals:
+  - id: host
+    title: Terminal
+    icon: terminal
+
+# Seed the VFS with the sandbox manifest the team commits to the repo. It
+# declares the whole box — contained + controlled + hardened — as one file.
+# The secrets are NAMES only: the proxy resolves them on egress, they are never
+# materialized inside the VM.
+files:
+  sbxenv.yaml: |
+    name: shiplog
+    agent: claude
+    policy:
+      profile: strict
+      allow: [api.github.com, api.anthropic.com]
+    kits: [dhi]
+    secrets: [GITHUB_TOKEN, LLM_API_KEY]   # proxied, never materialized in the VM
+
+sections:
+  - title: "The team grows"
+    contentPath: 00-the-team-grows.md
+  - title: "Read the sandbox definition"
+    contentPath: 01-read-env.md
+    steps:
+      - id: read-env
+        title: "Resolve the committed sandbox"
+  - title: "Reproduce it anywhere"
+    contentPath: 02-reproduce.md
+    steps:
+      - id: reproduce
+        title: "Create the byte-identical box"
+  - title: "What just happened"
+    contentPath: 03-aha.md
+
+variables:
+  app: ShipLog
+  agent: claude

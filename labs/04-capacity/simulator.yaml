@@ -1,0 +1,44 @@
+version: "2.0"
+
+metadata:
+  id: capacity
+  title: "Capacity"
+  summary: "Declare the sandbox once in sbxenv.yaml, commit it, and every developer and agent reproduces the byte-identical contained + controlled + hardened box."
+
+settings:
+  pace:
+    boot: 900
+
+defaults:
+  unmatched:
+    stderr: ["Command not simulated in this lab. Follow the instructions on the left."]
+    exit: 127
+
+scenarios:
+  # Pretty-print the RESOLVED sandbox env. `cat sbxenv.yaml` is a built-in and
+  # a built-in cannot carry `completes:` — so this scenario is what actually
+  # satisfies the read-env milestone.
+  - id: sbx-env-show
+    completes: read-env
+    when:
+      command: sbx env show
+    then:
+      output:
+        - { text: "⬡ sbx  resolving sbxenv.yaml", delay: short }
+        - "  name     shiplog"
+        - "  agent    claude"
+        - "  policy   strict  (allow: api.github.com, api.anthropic.com)"
+        - "  kits     dhi"
+        - "  secrets  GITHUB_TOKEN, LLM_API_KEY   (proxied — never in the VM)"
+        - { text: "✓ one file describes the whole box: contained + controlled + hardened", delay: medium }
+
+  # Reproduce the box anywhere from the committed manifest.
+  - id: sbx-env-run
+    completes: reproduce
+    when:
+      command: sbx env run
+    then:
+      output:
+        - { text: "⬡ sbx  reading sbxenv.yaml", delay: short }
+        - { text: "⬡ sbx  microVM + strict policy + dhi kit + credential proxy  → ready", delay: boot }
+        - { text: "⬡ sbx  identical to every other ShipLog developer", delay: short }

@@ -1,0 +1,54 @@
+version: "2.0"
+
+metadata:
+  id: contain
+  title: "Contain"
+  summary: "Box a full-access agent in a microVM; the credential proxy makes its secrets useless to leak."
+
+# In-memory state. The scaffold scenario flips this; nothing gates on it yet, so
+# the lab works whatever order a learner runs the commands in.
+state:
+  scaffolded: false
+
+settings:
+  pace:
+    pull: 900
+
+defaults:
+  unmatched:
+    stderr: ["Command not simulated in this lab. Follow the instructions on the left."]
+    exit: 127
+
+scenarios:
+  # Hire the agent and scaffold ShipLog — fully boxed.
+  - id: sbx-run-scaffold
+    completes: scaffold
+    when:
+      command: sbx run
+    then:
+      state:
+        scaffolded: true
+      output:
+        - { text: "⬡ sbx  launching microVM  (kernel: isolated · docker: isolated · fs: isolated)", delay: short }
+        - { text: "⬡ sbx  credential proxy up — GITHUB_TOKEN mapped to placeholder", delay: short }
+        - { text: "⬡ agent connected", delay: short }
+        - { text: "agent › creating app/ …", delay: short }
+        - "agent › app/page.tsx"
+        - "agent › app/api/notes/route.ts      (reads merged PRs via GitHub API)"
+        - "agent › lib/github.ts"
+        - "agent › .env.example"
+        - { text: "✓ scaffold complete — 11 files", delay: medium }
+
+  # Play the attacker: dump the environment inside the box. All secrets are
+  # proxy placeholders — the real values never entered the VM.
+  - id: sbx-exec-env
+    completes: inspect-env
+    when:
+      command: sbx exec
+    then:
+      output:
+        - "GITHUB_TOKEN=sbx-proxy-placeholder-9f3a2c"
+        - "LLM_API_KEY=sbx-proxy-placeholder-7c21bd"
+        - "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
+        - "HOME=/home/agent"
+        - "SBX_SANDBOX=shiplog-dev"
